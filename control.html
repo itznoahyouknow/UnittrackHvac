@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UnitTrack HVAC - Control Panel</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Netlify Identity Widget -->
+    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+    <style>
+        /* Matching the index.html style variables */
+        :root {
+            --system-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
+            --primary-color: #2997ff;
+            --primary-hover: #0077ed;
+            --text-color: #f5f5f7;
+            --text-secondary: #86868b;
+            --bg-dark: #000;
+            --bg-card: #1d1d1f;
+            --success-color: #28c840;
+            --warning-color: #ff9f0a;
+            --danger-color: #ff453a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--system-ui);
+            background: var(--bg-dark);
+            color: var(--text-color);
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+        }
+
+        .control-header {
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            padding: 1rem;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .login-button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .login-button:hover {
+            background: var(--primary-hover);
+        }
+
+        .content-editor {
+            max-width: 1200px;
+            margin: 80px auto 20px;
+            padding: 20px;
+        }
+
+        .editor-section {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .editor-section h2 {
+            margin-bottom: 15px;
+            color: var(--text-color);
+        }
+
+        .editor-field {
+            margin-bottom: 15px;
+        }
+
+        .editor-field label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+        }
+
+        .editor-field textarea,
+        .editor-field input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-color);
+            padding: 10px;
+            border-radius: 8px;
+            font-family: var(--system-ui);
+        }
+
+        .editor-field textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+
+        .save-button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .save-button:hover {
+            background: var(--primary-hover);
+            transform: scale(1.02);
+        }
+
+        @media (max-width: 768px) {
+            .content-editor {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="control-header">
+        <div class="header-content">
+            <h1><i class="fas fa-edit"></i> Content Editor</h1>
+            <div data-netlify-identity-button class="login-button">Login</div>
+        </div>
+    </header>
+
+    <div class="content-editor">
+        <div class="editor-section">
+            <h2>Hero Section</h2>
+            <div class="editor-field">
+                <label>Title</label>
+                <input type="text" id="hero-title" value="UnitTrack HVAC">
+            </div>
+            <div class="editor-field">
+                <label>Search Placeholder</label>
+                <input type="text" id="search-placeholder" value="Search units, serial numbers, or locations...">
+            </div>
+        </div>
+
+        <div class="editor-section">
+            <h2>Navigation</h2>
+            <div class="editor-field">
+                <label>Logo Text</label>
+                <input type="text" id="logo-text" value="UnitTrack">
+            </div>
+            <div class="editor-field">
+                <label>Navigation Links (One per line)</label>
+                <textarea id="nav-links" placeholder="Home&#10;About&#10;Contact"></textarea>
+            </div>
+        </div>
+
+        <button class="save-button" onclick="saveChanges()">Save Changes</button>
+    </div>
+
+    <script>
+        // Initialize Netlify Identity
+        if (window.netlifyIdentity) {
+            window.netlifyIdentity.on("init", user => {
+                if (!user) {
+                    window.netlifyIdentity.on("login", () => {
+                        document.location.href = "/control/";
+                    });
+                }
+            });
+        }
+
+        // Protect the control panel with authentication
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.netlifyIdentity) {
+                window.netlifyIdentity.on("init", user => {
+                    if (!user) {
+                        window.location.href = "/";
+                    } else {
+                        // Load current content
+                        loadCurrentContent();
+                    }
+                });
+            }
+        });
+
+        async function loadCurrentContent() {
+            try {
+                const response = await fetch('/.netlify/functions/get-content', {
+                    headers: {
+                        Authorization: `Bearer ${window.netlifyIdentity.currentUser().token.access_token}`
+                    }
+                });
+                
+                if (!response.ok) throw new Error('Failed to load content');
+                
+                const data = await response.json();
+                
+                // Populate form fields
+                document.getElementById('hero-title').value = data.heroTitle || '';
+                document.getElementById('search-placeholder').value = data.searchPlaceholder || '';
+                document.getElementById('logo-text').value = data.logoText || '';
+                document.getElementById('nav-links').value = (data.navLinks || []).join('\n');
+            } catch (error) {
+                console.error('Error loading content:', error);
+                alert('Error loading content: ' + error.message);
+            }
+        }
+
+        async function saveChanges() {
+            const changes = {
+                heroTitle: document.getElementById('hero-title').value,
+                searchPlaceholder: document.getElementById('search-placeholder').value,
+                logoText: document.getElementById('logo-text').value,
+                navLinks: document.getElementById('nav-links').value.split('\n').filter(link => link.trim())
+            };
+
+            try {
+                const token = window.netlifyIdentity.currentUser().token.access_token;
+                
+                const saveResponse = await fetch('/.netlify/functions/save-html', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        pageId: 'index',
+                        content: changes
+                    })
+                });
+
+                if (!saveResponse.ok) {
+                    throw new Error('Failed to save changes');
+                }
+
+                alert('Changes saved successfully!');
+            } catch (error) {
+                console.error('Error saving changes:', error);
+                alert('Error saving changes: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

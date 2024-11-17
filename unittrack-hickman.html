@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UnitTrack HVAC - Hickman</title>
+  
+  <!-- Preload critical resources -->
+  <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" as="style">
+  <link rel="preload" href="styles.css" as="style">
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="styles.css">
+  
+  <!-- PWA Meta Tags -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="UnitTrack HVAC">
+  <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+  <meta name="theme-color" content="#000000">
+  
+  <!-- Cache Control -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+
+  <style>
+    :root {
+      --primary-color: #0A84FF;
+      --text-color: #ffffff;
+      --text-secondary: #98989D;
+      --background: #000000;
+      --surface: #1C1C1E;
+      --swiftui-gradient: linear-gradient(135deg, #0A84FF, #30B0C7);
+      --card-background: rgba(28, 28, 30, 0.8);
+      --border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      background: var(--background);
+      color: var(--text-color);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: var(--card-background);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      padding: 15px 20px;
+      z-index: 100;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .btn {
+      background: var(--swiftui-gradient);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .btn:hover {
+      transform: scale(1.02);
+      box-shadow: 0 4px 12px rgba(10, 132, 255, 0.3);
+    }
+  </style>
+  <style>
+    .user-info {
+      position: fixed;
+      top: 60px;
+      right: 20px;
+      background: var(--card-background);
+      padding: 16px 24px;
+      border-radius: 16px;
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      z-index: 1000;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    }
+
+    .logout-btn {
+      background: var(--swiftui-gradient);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 600;
+      margin-top: 12px;
+      transition: all 0.3s ease;
+    }
+
+    .search-filters {
+      display: flex;
+      gap: 12px;
+      margin: 24px 0;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      background: var(--surface);
+      border: 1px solid var(--border-color);
+      padding: 10px 20px;
+      border-radius: 20px;
+      color: var(--text-color);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 500;
+    }
+
+    .filter-btn.active {
+      background: var(--swiftui-gradient);
+      border-color: transparent;
+    }
+
+    .last-search {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-top: 12px;
+      font-weight: 500;
+    }
+  </style>
+   
+    <style>
+    .hero-section {
+        position: relative;
+        padding: 80px 24px;
+        text-align: center;
+        overflow: hidden;
+        background: linear-gradient(180deg, rgba(0,0,0,0.7) 0%, var(--surface) 100%);
+        border-radius: 28px;
+        margin: 24px;
+        border: 1px solid var(--border-color);
+        height: 60vh;
+    }
+
+    .hero-content {
+        position: relative;
+        z-index: 10;
+        top: 60%;
+        transform: translateY(-50%);
+        text-align: center;
+        
+      }
+
+    .hero-title {
+        font-size: 52px;
+        font-weight: 700;
+        margin-bottom: 36px;
+        background: var(--swiftui-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        letter-spacing: -0.5px;
+    }
+
+    .hero-search {
+        position: relative;
+        max-width: 680px;
+        margin: 0 auto;
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 24px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-secondary);
+        font-size: 18px;
+    }
+
+    #search-bar {
+        width: 100%;
+        padding: 18px 24px 18px 56px;
+        border-radius: 16px;
+        border: 1px solid var(--border-color);
+        background: var(--card-background);
+        color: var(--text-color);
+        font-size: 17px;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        transition: all 0.3s ease;
+    }
+
+    #search-bar:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        background: rgba(255, 255, 255, 0.1);
+        box-shadow: 0 0 0 4px rgba(10, 132, 255, 0.15);
+    }
+
+    /* Search Results Section */
+    .search-results-section {
+        padding: 24px;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .result-card {
+        background: var(--card-background);
+        border-radius: 20px;
+        padding: 24px;
+        margin-bottom: 24px;
+        border: 1px solid var(--border-color);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        transition: all 0.3s ease;
+    }
+
+    .result-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+        border-color: var(--primary-color);
+    }
+
+    /* Animation Effects */
+    .snowflakes {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        pointer-events: none;
+        opacity: 0.6;
+    }
+
+    .heat-wave {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 40%;
+        background: linear-gradient(0deg, rgba(10, 132, 255, 0.1) 0%, transparent 100%);
+        animation: heatWave 4s ease-in-out infinite;
+    }
+
+    @keyframes heatWave {
+        0%, 100% { transform: translateY(0); opacity: 0.4; }
+        50% { transform: translateY(-15px); opacity: 0.7; }
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .hero-title {
+            font-size: 42px;
+        }
+
+        .search-filters {
+            justify-content: center;
+        }
+
+        .filter-btn {
+            font-size: 15px;
+            padding: 8px 16px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .hero-section {
+            padding: 48px 20px;
+        }
+
+        .hero-title {
+            font-size: 32px;
+        }
+
+        #search-bar {
+            font-size: 16px;
+            padding: 14px 20px 14px 48px;
+        }
+    }
+  </style>
+  <style>
+    /* Header Styles */
+    .apple-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: var(--card-background);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      z-index: 1000;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .global-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 16px 24px;
+    }
+
+    .nav-logo {
+      color: var(--text-color);
+      text-decoration: none;
+      font-size: 17px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-logo i {
+      background: var(--swiftui-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .nav-menu {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      height: 44px;
+      padding: 0 12px;
+    }
+
+    .nav-item {
+      background: none;
+      border: none;
+      color: var(--text-color);
+      font-size: 15px;
+      cursor: pointer;
+      padding: 10px;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 36px;
+      height: 36px;
+    }
+
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateY(-1px);
+    }
+  </style>
+
+  <!-- Add search.js reference -->
+  <script src="search.js" defer></script>
+</head>
+<body>
+  <!-- Header -->
+  <header class="apple-header">
+    <nav class="global-nav">
+      <a href="/" class="nav-logo">
+        <i class="fas fa-snowflake"></i>
+        <div class="logo-text">
+          <span>UnitTrack</span>
+          <span id="location-display" class="location-text">- Hickman</span>
+        </div>
+      </a>
+      <div class="nav-menu">
+        <div id="userWelcome" class="nav-text"></div>
+        <div id="lastLogin" class="nav-text nav-secondary"></div>
+        <button id="darkModeToggle" class="nav-item">
+          <i class="fas fa-moon"></i>
+        </button>
+        <button id="logoutBtn" class="nav-item" onclick="handleLogout()">
+          <i class="fas fa-sign-out-alt"></i>
+        </button>
+      </div>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+    <section class="search-results-section" style="padding: 48px 0; max-width: 1200px; margin: 0 auto; min-height: 400px; position: relative;">
+      <div class="hero-section" style="position: relative; padding: 80px 24px; text-align: center; overflow: hidden; background: linear-gradient(180deg, rgba(0,0,0,0.7) 0%, var(--surface) 100%); border-radius: 0; margin: 0; border: 1px solid var(--border-color); height: 60vh; box-shadow: 0 8px 32px rgba(0,0,0,0.2);">
+        <div class="hero-content" style="position: relative; z-index: 10; top: 60%; transform: translateY(-50%); text-align: center;">
+          <h1 class="hero-title" style="font-size: 52px; font-weight: 700; margin-bottom: 36px; background: var(--swiftui-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">Hickman HVAC Units</h1>
+          <div class="hero-search" style="position: relative; max-width: 680px; margin: 0 auto;">
+            <i class="fas fa-search search-icon" style="position: absolute; left: 24px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 18px;"></i>
+            <input 
+              type="text" 
+              id="search-bar"
+              placeholder="Search by unit number, location, or serial number..."
+              autocomplete="off"
+              style="width: 100%; padding: 18px 24px 18px 56px; border-radius: 16px; border: 1px solid var(--border-color); background: var(--card-background); color: var(--text-color); font-size: 17px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); transition: all 0.3s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"
+            />
+        
+          </div>
+          
+          <div class="search-filters">
+  
+          </div>
+
+          <div class="last-search" id="lastSearch"></div>
+        </div>
+      </div>
+
+      <div id="search-results" class="results-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 28px; padding: 28px 0; animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);">
+        <!-- Search results populated by search.js -->
+      </div>
+
+      <!-- Hidden form inputs -->
+      <input type="hidden" id="location-input" value="hickman">
+      <input type="hidden" id="unit-type-input" name="unit-type">
+
+      <div id="search-results" class="results-grid">
+        <!-- Search results populated by search.js -->
+      </div>
+    </section>
+    </section>
+
+      <div id="no-results" class="no-results-message" style="display: none;">
+        <i class="fas fa-search"></i>
+        <p>No results found. Try adjusting your search terms.</p>
+      </div>
+
+      <style>
+        .search-results-section {
+          padding: 48px 24px;
+          max-width: 1200px;
+          margin: 0 auto;
+          min-height: 400px;
+          position: relative;
+        }
+
+        .results-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+          gap: 28px;
+          padding: 28px 0;
+          animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .no-results-message {
+          text-align: center;
+          padding: 48px;
+          color: var(--text-secondary);
+          animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .no-results-message i {
+          font-size: 56px;
+          margin-bottom: 20px;
+          opacity: 0.6;
+        }
+
+        @keyframes fadeIn {
+          from { 
+            opacity: 0; 
+            transform: translateY(15px); 
+          }
+          to { 
+            opacity: 1; 
+            transform: translateY(0); 
+          }
+        }
+
+        @media (max-width: 1200px) {
+          .results-grid {
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 24px;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .search-results-section {
+            padding: 20px;
+          }
+          
+          .results-grid {
+            grid-template-columns: 1fr;
+            gap: 20px;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .search-results-section {
+            padding: 16px;
+          }
+        }
+      </style>
+    </section>
+  </main>
+
+  <!-- Scripts -->
+  <script>
+    // User Management
+    document.addEventListener('DOMContentLoaded', () => {
+      const userName = localStorage.getItem('userName');
+      if (!userName) {
+        window.location.href = 'index.html';
+        return;
+      }
+
+      // Update user welcome message
+      document.getElementById('userWelcome').textContent = `Welcome, ${userName}`;
+      
+      // Set last login time
+      const lastLogin = new Date().toLocaleString();
+      localStorage.setItem('lastLogin', lastLogin);
+      document.getElementById('lastLogin').textContent = `Last login: ${lastLogin}`;
+
+      // Initialize location display
+      updateLocationDisplay();
+    });
+
+    // Location Management
+    function updateLocationDisplay() {
+      const location = getLocation();
+      document.getElementById('location-display').textContent = `- ${location}`;
+    }
+
+    function getLocation() {
+      return localStorage.getItem('selectedLocation') || 'Hickman';
+    }
+
+    // Logout Handler
+    function handleLogout() {
+      localStorage.removeItem('lastLogin');
+      window.location.href = 'index.html';
+    }
+
+    // Dark Mode Toggle
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    darkModeToggle.addEventListener('click', () => {
+      document.body.classList.toggle('dark-mode');
+      const isDarkMode = document.body.classList.contains('dark-mode');
+      localStorage.setItem('darkMode', isDarkMode);
+    });
+  </script>
+  
+</body>
+</html>

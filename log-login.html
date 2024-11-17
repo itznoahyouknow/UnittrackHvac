@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UnitTrack HVAC - Login Logs</title>
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --system-ui: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', sans-serif;
+            --primary-color: #2997ff;
+            --text-color: #f5f5f7;
+            --text-secondary: #86868b;
+            --bg-dark: #000;
+            --bg-card: #1d1d1f;
+            --swiftui-gradient: linear-gradient(135deg, #2997FF, #007AFF);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            font-family: var(--system-ui);
+            background: var(--bg-dark);
+            color: var(--text-color);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(29, 29, 31, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            background: var(--swiftui-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logs-container {
+            background: rgba(29, 29, 31, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .log-entry {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .log-entry:hover {
+            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .log-entry .username {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        .log-entry .timestamp {
+            color: var(--text-secondary);
+            font-size: 0.9em;
+        }
+
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .filter-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-color);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-btn.active {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><i class="fas fa-history"></i> Login Logs</h1>
+    </div>
+
+    <div class="filters">
+        <button class="filter-btn active" data-filter="all">All Logs</button>
+        <button class="filter-btn" data-filter="today">Today</button>
+        <button class="filter-btn" data-filter="week">This Week</button>
+        <button class="filter-btn" data-filter="month">This Month</button>
+    </div>
+
+    <div class="logs-container" id="logsContainer">
+        <!-- Logs will be populated here -->
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            loadLogs();
+        });
+
+        async function loadLogs() {
+            try {
+                const response = await fetch('/.netlify/functions/get-logs');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const logs = await response.json();
+                displayLogs(logs);
+            } catch (error) {
+                console.error('Error fetching logs:', error);
+                document.getElementById('logsContainer').innerHTML = `
+                    <div class="log-entry" style="text-align: center; color: #ff3b30;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>Failed to load logs. Please try again later.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function displayLogs(logs) {
+            const container = document.getElementById('logsContainer');
+            
+            if (!logs || logs.length === 0) {
+                container.innerHTML = `
+                    <div class="log-entry" style="text-align: center;">
+                        <i class="fas fa-info-circle"></i>
+                        <p>No logs found</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = '';
+            logs.forEach(log => {
+                if (log.userName) { // Only create entry if userName exists
+                    const logEntry = document.createElement('div');
+                    logEntry.className = 'log-entry';
+                    logEntry.innerHTML = `
+                        <div class="username">
+                            <i class="fas fa-user"></i> ${escapeHtml(log.userName)}
+                        </div>
+                        <div class="timestamp">
+                            <i class="fas fa-clock"></i> ${escapeHtml(log.date)} ${escapeHtml(log.time)}
+                        </div>
+                    `;
+                    container.appendChild(logEntry);
+                }
+            });
+        }
+
+        // Helper function to prevent XSS
+        function escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // Filter functionality
+        const filterButtons = document.querySelectorAll('.filter-btn');
+        filterButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                filterLogs(button.dataset.filter);
+            });
+        });
+
+        async function filterLogs(filter) {
+            try {
+                const response = await fetch('/.netlify/functions/get-logs');
+                if (!response.ok) throw new Error('Failed to fetch logs');
+                const logs = await response.json();
+                
+                let filteredLogs = logs;
+                const now = new Date();
+
+                switch(filter) {
+                    case 'today':
+                        filteredLogs = logs.filter(log => {
+                            const logDate = new Date(log.timestamp);
+                            return logDate.toDateString() === now.toDateString();
+                        });
+                        break;
+                    case 'week':
+                        filteredLogs = logs.filter(log => {
+                            const logDate = new Date(log.timestamp);
+                            const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+                            return logDate >= weekAgo;
+                        });
+                        break;
+                    case 'month':
+                        filteredLogs = logs.filter(log => {
+                            const logDate = new Date(log.timestamp);
+                            return logDate.getMonth() === now.getMonth() &&
+                                   logDate.getFullYear() === now.getFullYear();
+                        });
+                        break;
+                }
+                
+                displayLogs(filteredLogs);
+            } catch (error) {
+                console.error('Error filtering logs:', error);
+            }
+        }
+    </script>
+</body>
+</html> 

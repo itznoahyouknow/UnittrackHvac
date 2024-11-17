@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Performance Data</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #121212;
+      color: #f5f5f7;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .data-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: rgba(29, 29, 31, 0.95);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+    }
+
+    .data-section {
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      color: #00f5a0;
+      margin-bottom: 15px;
+    }
+
+    .data-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+    }
+
+    .data-card {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 15px;
+      border-radius: 8px;
+      transition: background-color 0.3s;
+    }
+
+    .data-card:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .data-label {
+      font-size: 0.9em;
+      color: #888;
+      margin-bottom: 5px;
+    }
+
+    .data-value {
+      font-size: 1.2em;
+      font-weight: 500;
+    }
+
+    .refresh-button {
+      background: #00f5a0;
+      color: #121212;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+
+    .refresh-button:hover {
+      opacity: 0.9;
+    }
+
+    .auto-refresh {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .auto-refresh label {
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+  <div class="data-container">
+    <div class="auto-refresh">
+      <button class="refresh-button" onclick="refreshData()">Refresh Data</button>
+      <label>
+        Auto-refresh interval:
+        <select id="refreshInterval" onchange="updateRefreshInterval()">
+          <option value="500">0.5s</option>
+          <option value="1000" selected>1s</option>
+          <option value="2000">2s</option>
+          <option value="5000">5s</option>
+        </select>
+      </label>
+    </div>
+    <div class="data-section">
+      <h2>Performance Metrics</h2>
+      <div class="data-grid" id="performanceMetrics">
+        <!-- Data will be populated here -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let refreshIntervalId;
+
+    function formatBytes(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    function formatTime(ms) {
+      return `${(ms / 1000).toFixed(2)}s`;
+    }
+
+    function updatePerformanceDisplay(data) {
+      const metricsContainer = document.getElementById('performanceMetrics');
+      metricsContainer.innerHTML = '';
+
+      // System Time
+      const now = new Date();
+      metricsContainer.appendChild(createDataCard('Current Time', now.toLocaleTimeString()));
+
+      // Uptime
+      const uptimeCard = createDataCard('Uptime', formatTime(data.uptime));
+      metricsContainer.appendChild(uptimeCard);
+
+      // FPS Calculator
+      const fps = Math.round(1000 / (performance.now() - lastFrameTime));
+      lastFrameTime = performance.now();
+      metricsContainer.appendChild(createDataCard('FPS', fps));
+
+      // Memory metrics
+      if (data.memory) {
+        const memoryMetrics = [
+          { label: 'Used JS Heap', value: formatBytes(data.memory.usedJSHeapSize) },
+          { label: 'Total JS Heap', value: formatBytes(data.memory.totalJSHeapSize) },
+          { label: 'JS Heap Limit', value: formatBytes(data.memory.jsHeapSizeLimit) },
+          { label: 'Heap Usage', value: Math.round((data.memory.usedJSHeapSize / data.memory.jsHeapSizeLimit) * 100) + '%' }
+        ];
+        memoryMetrics.forEach(metric => {
+          metricsContainer.appendChild(createDataCard(metric.label, metric.value));
+        });
+      }
+
+      // Connection Info
+      if (navigator.connection) {
+        metricsContainer.appendChild(createDataCard('Connection Type', navigator.connection.effectiveType));
+        metricsContainer.appendChild(createDataCard('Downlink Speed', navigator.connection.downlink + ' Mbps'));
+      }
+
+      // Timing metrics
+      const timingMetrics = [
+        { label: 'Page Load Time', value: formatTime(data.timing.loadTime) },
+        { label: 'DOM Ready Time', value: formatTime(data.timing.domReadyTime) },
+        { label: 'Network Latency', value: formatTime(data.timing.networkLatency) }
+      ];
+      timingMetrics.forEach(metric => {
+        metricsContainer.appendChild(createDataCard(metric.label, metric.value));
+      });
+
+      // Navigation type
+      const navType = data.navigation.type === 0 ? 'Navigate' :
+                     data.navigation.type === 1 ? 'Reload' :
+                     data.navigation.type === 2 ? 'Back/Forward' : 'Other';
+      metricsContainer.appendChild(createDataCard('Navigation Type', navType));
+      metricsContainer.appendChild(createDataCard('Redirect Count', data.navigation.redirectCount));
+
+      // Resource Usage
+      const resources = performance.getEntriesByType('resource');
+      metricsContainer.appendChild(createDataCard('Resource Count', resources.length));
+    }
+
+    let lastFrameTime = performance.now();
+
+    function createDataCard(label, value) {
+      const card = document.createElement('div');
+      card.className = 'data-card';
+      card.innerHTML = `
+        <div class="data-label">${label}</div>
+        <div class="data-value">${value}</div>
+      `;
+      return card;
+    }
+
+    function updateRefreshInterval() {
+      const interval = parseInt(document.getElementById('refreshInterval').value);
+      clearInterval(refreshIntervalId);
+      refreshIntervalId = setInterval(refreshData, interval);
+    }
+
+    function refreshData() {
+      // Send message to parent window requesting latest data
+      window.parent.postMessage({ type: 'requestPerformanceData' }, '*');
+    }
+
+    // Listen for messages from parent window
+    window.addEventListener('message', function(event) {
+      if (event.data.type === 'performanceUpdate') {
+        updatePerformanceDisplay(event.data.data);
+      }
+    });
+
+    // Initial setup
+    refreshData();
+    updateRefreshInterval();
+  </script>
+</body>
+</html>
